@@ -312,10 +312,196 @@ finally{
 
 
 //make a patch request (partially updating something existing?)
+/**
+ * @swagger
+ * /food/{id}:
+ *    patch:
+ *      description: Update a record from food table
+ *      produces:
+ *          - application/json
+ *      responses:
+ *          200:
+ *              description: Updated data fromfood table
+ *          404:
+ *              description: No record for given id
+ *      parameters:
+ *          - name: id
+ *            in: path
+ *            required: true
+ *            type: string
+ *          - name: Food
+ *            description: food object
+ *            in: body
+ *            required: true
+ *            schema:
+ *              $ref: '#/definitions/Food'
+ *
+ */
+app.patch('/food/:id',
+    async (req,res)=>{
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).send(errors);
+    }
+    let conn;
+    const id = req.params.id
+    const {ITEM_NAME,ITEM_UNIT,COMPANY_ID}=req.body
+    let rows=0
+    try{
+        conn= await pool.getConnection();
+	if (ITEM_NAME && ITEM_UNIT && COMPANY_ID){
+        	const result= await pool.query(`UPDATE foods SET ITEM_NAME='${ITEM_NAME}', ITEM_UNIT='${ITEM_UNIT}' , COMPANY_ID='${COMPANY_ID}' 
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+    else if (ITEM_NAME && ITEM_UNIT ){
+        	const result= await pool.query(`UPDATE foods SET ITEM_NAME='${ITEM_NAME}', ITEM_UNIT='${ITEM_UNIT}'  
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+   else if (ITEM_NAME &&  COMPANY_ID){
+        	const result= await pool.query(`UPDATE foods SET ITEM_NAME='${ITEM_NAME}',  COMPANY_ID='${COMPANY_ID}' 
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+    else if ( ITEM_UNIT && COMPANY_ID){
+        	const result= await pool.query(`UPDATE foods SET ITEM_UNIT='${ITEM_UNIT}' , COMPANY_ID='${COMPANY_ID}' 
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+    else if (ITEM_NAME){
+        	const result= await pool.query(`UPDATE foods SET ITEM_NAME='${ITEM_NAME}'
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+    else if ( ITEM_UNIT){
+        	const result= await pool.query(`UPDATE foods SET ITEM_UNIT='${ITEM_UNIT}' 
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+    else if (COMPANY_ID){
+        	const result= await pool.query(`UPDATE foods SET COMPANY_ID='${COMPANY_ID}' 
+            WHERE ITEM_ID = '${id}'`)
+		rows = result.affectedRows
+	}
+
+	
+	if(rows==0) {
+        	return res.status(404).send('Record not Found');
+        }
+	return res.status(200).send("Updated Successfully");
+	}
+catch(error) {
+	res.status(500).send('Server Error');
+    }
+finally{
+    if (conn) return conn.end();
+}
+});
+
+
+
+
 
 //make a put request (updating something existing)
+/**
+ * @swagger
+ * /food/{id}:
+ *    put:
+ *      description: update record in food table, create new if not one to edit
+ *      produces:
+ *          - application/json
+ *      responses:
+ *          200:
+ *              description: Added data to company table
+ *      parameters:
+ *          - name: id
+ *            in: path
+ *            required: true
+ *            type: string
+ *          - name: Food
+ *            description: food object
+ *            in: body
+ *            required: true
+ *            schema:
+ *              $ref: '#/definitions/Food'
+ *
+ */
 
+
+ app.put('/food/:id', 
+	[ check('ITEM_NAME').not().isEmpty().trim(),
+		  check('ITEM_UNIT').not().isEmpty().trim(),
+      check('COMPANY_ID').not().isEmpty().trim()
+      ],
+	async (req,res)=>{
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).send(errors);
+    }
+    let conn;
+    const id = req.params.id   
+    console.log(req.params.id)
+    const {ITEM_NAME,ITEM_UNIT,COMPANY_ID}=req.body
+ 
+    try{
+        conn= await pool.getConnection();
+	const result= await pool.query(`UPDATE foods SET ITEM_NAME='${ITEM_NAME}', ITEM_UNIT='${ITEM_UNIT}', COMPANY_ID='${COMPANY_ID}' WHERE ITEM_ID = '${id}'`)
+	if (result.affectedRows==0){
+	    const result= await pool.query(`INSERT INTO foods (ITEM_ID, ITEM_NAME, ITEM_UNIT,COMPANY_ID) VALUES ('${id}', '${ITEM_NAME}', '${ITEM_UNIT}', '${COMPANY_ID}')`)
+	}
+    res.status(200).send('Record Updated Successfully');
+}
+catch(error) {
+         console.error(error.message)
+        res.status(500).send('Server Error');
+    }
+finally{
+    if (conn) return conn.end();
+}
+
+});
+ 
 //make a delete request
+/**
+ * @swagger
+ * /food/{id}:
+ *    delete:
+ *      description: Delete the record in the food table
+ *      produces:
+ *          - application/json
+ *      responses:
+ *          200:
+ *              description: Successfully deleted record from table
+ *      parameters:
+ *          - name: id
+ *            in: path
+ *            required: true
+ *            type: string
+ *
+ */
+app.delete('/food/:id', async (req,res)=>{
+    let conn;
+    const id = req.params.id
+    try{
+        conn= await pool.getConnection();
+	const result= await pool.query(`DELETE FROM foods WHERE ITEM_ID='${id}'`);
+	if(result.affectedRows==0) {
+		return res.status(404).send('Record not Found');
+	}
+	return res.status(404).send('Deleted Record Successfully!');
+	}
+   catch(error) {
+         console.error(error.message)
+        res.status(500).send('Server Error');
+    }
+finally{
+    if (conn) return conn.end();
+}
+});
+
+
+
 
 app.listen(port, () => {
 console.log(`Example app listening at http://localhost:${port}`)
