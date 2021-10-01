@@ -6,6 +6,8 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUI = require("swagger-ui-express");
 const cors = require("cors");
 const {check, validationResult} = require('express-validator');
+const axios = require('axios');
+
 
 const options = {
   swaggerDefinition: {
@@ -500,7 +502,20 @@ finally{
 }
 });
 
-
+                                                                                                                                                 
+app.get('/say', function(req,res) {                                                                                                              
+       // resp = "Hello World" + req.query.keyword ;                                                                                               
+        axios.get('https://a8vdvsg7ca.execute-api.us-east-2.amazonaws.com/default/my-function?keyword='+req.query.keyword)                       
+.then(response =>{                                                                                                                               
+                res.statusCode = response.data.statusCode;                                                                                       
+                res.send(response.data.body);                                                                                                    
+        })                                                                                                                                       
+        .catch(err=>{                                                                                                                            
+                res.statusCode = 400;                                                                                                            
+                res.send(err);                                                                                                                   
+        });                                                                                                                                      
+});                                                                                                                                              
+                                                                                                                                                 
 
 
 app.listen(port, () => {
